@@ -1,17 +1,21 @@
+import PizzaDAO from "../Persistencia/pizzaDAO.js";
+
 export default class Pizza{
     #codigo;
     #descricao;
     #tamanho;
     #borda;
     #valor;
+    #urlImagem;
     #ingredientes;
 
-    constructor(codigo, descricao, tamanho, borda, valor, ingredientes=[]){
+    constructor(codigo, descricao, tamanho, borda, valor, urlImagem, ingredientes){
         this.#codigo = codigo;
         this.#descricao = descricao;
         this.#tamanho = tamanho;
         this.#borda = borda;
         this.#valor = valor;
+        this.#urlImagem = urlImagem;
         this.#ingredientes = ingredientes;
     }
 
@@ -63,6 +67,14 @@ export default class Pizza{
         this.#ingredientes = novosIngredientes;
     }
 
+    get urlImagem(){
+        return this.#urlImagem;
+    }
+
+    set urlImagem(novaUrl){
+        this.#urlImagem = novaUrl;
+    }
+
     //override do método toJSON()
     toJSON(){
         return {
@@ -71,7 +83,30 @@ export default class Pizza{
             'tamanho': this.#tamanho,
             'borda': this.#borda,
             'valor': this.#valor,
+            'urlImagem': this.#urlImagem,
             'ingredientes': this.#ingredientes
         }
     }
+
+    async gravar(){
+        //DAO = Data Access Object
+        const pizzaDAO = new PizzaDAO();
+        await pizzaDAO.gravar(this);
+    }
+
+    async atualizar(){
+        const pizzaDAO = new PizzaDAO();
+        await pizzaDAO.atualizar(this);
+    }
+
+    async excluir(){
+        const pizzaDAO = new PizzaDAO();
+        await pizzaDAO.excluir(this);
+    }
+
+    async consultar(){
+        const pizzaDAO = new PizzaDAO();
+        return await pizzaDAO.consultar();
+    }
+
 }
