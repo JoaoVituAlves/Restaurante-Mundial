@@ -1,4 +1,6 @@
 import { obterCardPizzas } from "../funcoesDialogFlow/funcoesDLFlow.js";
+import Pedido from '../Modelo/pedido.js';
+import Pizza from "../Modelo/pizza.js";
 
 export default class DialogFlowCtrl {
 
@@ -9,7 +11,7 @@ export default class DialogFlowCtrl {
 
             //como identificar a origem da requisição do dialogFlow: messenger, slack, etc
             const origem = requisicao.body?.originalDetectIntentRequest?.source;
-            if (intencao === 'Default Welcome Intent') {
+            if (intencao === 'IntencaoUsuario') {
                 //devolver uma resposta para o DialogFlow
                 if (origem) {
                     //cards no formato custom
@@ -93,8 +95,108 @@ export default class DialogFlowCtrl {
 
                     })
                 }
-            }
+            } // fim if (intecao == 'IntencaoUsuario')
+            else if (intencao === "RegistroLocalEntrega") {
+                //capturar a escolha do usuário em queryResult.outputContexts = [ lista de objetos que representam contextos]
+                //Em um desses objetivos será possível acessar a propriedade "parameters"
+                //Dentro do objeto parameters poderemos acessar os atributos pizza : [] e number :[]
+                let pizzas = [];
+                let qtds = [];
+                for (const contexto of requisicao.body.queryResult.outputContexts) {
+                    if (contexto.parameters.pizza) {
+                        pizzas = contexto.parameters.pizza;
+                        qtds = contexto.parameters.number;
+                    }
+                }
 
+                const dataHoje = new Date().toLocaleDateString(); //"01/01/2023"
+                let itensPedido = [];
+                for (let i = 0; i < pizzas.length; i++) {
+
+                    itensPedido.push({
+                        "codigo":0,
+                        "pizza": pizzas[i],
+                        "qtd": qtds[i]
+                    });
+
+                }
+                const enderecoEntrega = `Rua: ${requisicao.body.queryResult.parameters.location['street-address']} \n
+                Cidade: ${requisicao.body.queryResult.parameters.location.city} / 
+                ${requisicao.body.queryResult.parameters.location["admin-area"]} \n
+                `;
+                const pedido = new Pedido(0, dataHoje, itensPedido);
+                pedido.gravar().then(() => {
+                    if (origem) { //mensagem para ambientes custom
+                        let respostaDF = {
+                            "fulfillmentMessages": [{
+                                "text": {
+                                    "text": [
+                                        `Pedido nº ${pedido.id} foi registrado com sucesso! \n`,
+                                        `Em aproximadamente 35 minutos seu pedido será entregue no seguinte endereço: ${enderecoEntrega} `,
+                                        `Obrigado pela preferência!`,
+                                        `Agradecemos o seu contato!`
+                                    ]
+                                }
+                            }]
+                        }
+                        resposta.json(respostaDF);
+                    }
+                    else { //messenger
+                        let respostaDF = {
+                            "fulfillmentMessages": []
+                        }
+                        respostaDF.fulfillmentMessages.push({
+                            "payload": {
+                                "richContent": [[{
+                                    "type": "description",
+                                    "title": `Pedido nº ${pedido.id} foi registrado com sucesso! \n`,
+                                    "text": [
+                                        `Em aproximadamente 35 minutos seu pedido será entregue no seguinte endereço: ${enderecoEntrega} `,
+                                        `Obrigado pela preferência!`,
+                                        `Agradecemos o seu contato!`
+                                    ]
+                                }]]
+                            }
+                        });
+                        resposta.json(respostaDF);
+                    }
+                })
+                    .catch((erro) => {
+                        if (origem) { //mensagem para ambientes custom
+                            let respostaDF = {
+                                "fulfillmentMessages": [{
+                                    "text": {
+                                        "text": [
+                                            `Erro ao registrar o seu pedido! \n`,
+                                            `Erro: ${erro.message}`,
+                                            `Entre em contato pelo telefone (11) 99999-9999`,
+                                            `Agradecemos o seu contato!`
+                                        ]
+                                    }
+                                }]
+                            }
+                            resposta.json(respostaDF);
+                        }
+                        else { //messenger
+                            let respostaDF = {
+                                "fulfillmentMessages": []
+                            }
+                            respostaDF.fulfillmentMessages.push({
+                                "payload": {
+                                    "richContent": [[{
+                                        "type": "description",
+                                        "title": `Erro ao registrar o seu pedido! \n`,
+                                        "text": [
+                                            `Erro: ${erro.message}`,
+                                            `Entre em contato pelo telefone (11) 99999-9999`,
+                                            `Agradecemos o seu contato!`
+                                        ]
+                                    }]]
+                                }
+                            });
+                        }
+                    });
+            }
         }
     }
 }

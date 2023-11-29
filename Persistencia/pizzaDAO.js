@@ -36,8 +36,14 @@ export default class PizzaDAO{
 
     }
 
-    async consultar(){
-        const sql =`SELECT * FROM pizza`;
+    async consultar(termoBusca){
+        let sql = "";
+        if (termoBusca){
+            sql = `SELECT * FROM pizza WHERE descricao LIKE '%${termoBusca}%'`;
+        }
+        else{
+         sql =`SELECT * FROM pizza`;
+        }
         const conexao = await conectar();
         const [registros, campos] = await conexao.execute(sql);
         let listaPizzas = [];
@@ -48,4 +54,5 @@ export default class PizzaDAO{
         global.poolConexoes.releaseConnection(conexao);
         return listaPizzas;
     }
+
 }

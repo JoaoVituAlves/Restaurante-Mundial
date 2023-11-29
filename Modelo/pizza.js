@@ -104,9 +104,9 @@ export default class Pizza{
         await pizzaDAO.excluir(this);
     }
 
-    async consultar(){
+    async consultar(termoBusca){
         const pizzaDAO = new PizzaDAO();
-        return await pizzaDAO.consultar();
+        return await pizzaDAO.consultar(termoBusca);
     }
 
 }
